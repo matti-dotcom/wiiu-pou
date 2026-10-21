@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="app.xsd" version="1.0">
+  <os_version type="hexBinary" length="8">000500101000400A</os_version>
+  <title_id type="hexBinary" length="8">0005000010504F55</title_id>
+  <title_version type="hexBinary" length="2">0001</title_version>
+  <sdk_version type="unsignedInt">21204</sdk_version>
+  <app_type type="hexBinary" length="4">80000000</app_type>
+  <group_id type="hexBinary" length="4">00001050</group_id>
+</app>

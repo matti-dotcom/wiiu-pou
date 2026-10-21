@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="meta.xsd" version="1.0">
+  <version type="unsignedInt">1</version>
+  <product_code type="string" length="32">WUP-P-APOU</product_code>
+  <content_platform type="string" length="32">WIIU</content_platform>
+  <company_code type="string" length="8">0001</company_code>
+  <mastering_date type="string" length="32">2026-10-21</mastering_date>
+  <title_id type="hexBinary" length="8">0005000010504F55</title_id>
+  <title_version type="hexBinary" length="2">0001</title_version>
+  <longname_ja type="string" length="512">Pou</longname_ja>
+  <longname_en type="string" length="512">Pou for Wii U</longname_en>
+  <longname_fr type="string" length="512">Pou pour Wii U</longname_fr>
+  <longname_de type="string" length="512">Pou für Wii U</longname_de>
+  <longname_it type="string" length="512">Pou per Wii U</longname_it>
+  <longname_es type="string" length="512">Pou para Wii U</longname_es>
+  <shortname_ja type="string" length="256">Pou</shortname_ja>
+  <shortname_en type="string" length="256">Pou</shortname_en>
+  <shortname_fr type="string" length="256">Pou</shortname_fr>
+  <shortname_de type="string" length="256">Pou</shortname_de>
+  <shortname_it type="string" length="256">Pou</shortname_it>
+  <shortname_es type="string" length="256">Pou</shortname_es>
+</menu>

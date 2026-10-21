@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pou - Nintendo Wii U Dual-Screen Simulator</title>
+<style>
+  @font-face {
+    font-family: 'Cookies';
+    src: url('../content/assets/fonts/Cookies.ttf');
+  }
+
+  * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+  body {
+    background: #1e1e24;
+    font-family: 'Cookies', Arial, sans-serif;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  header h1 {
+    font-size: 32px;
+    color: #ffcc66;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+  }
+  header p {
+    font-size: 14px;
+    color: #bbb;
+    margin-top: 4px;
+  }
+
+  .screens-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1400px;
+    width: 100%;
+  }
+
+  /* TV Bezel */
+  .tv-frame {
+    background: #111;
+    border: 12px solid #282828;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(255,200,100,0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  .tv-label {
+    background: #181818;
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    padding: 4px 0;
+    font-family: sans-serif;
+    letter-spacing: 1px;
+  }
+
+  /* GamePad Bezel */
+  .drc-frame {
+    background: #e6e6e6;
+    border: 10px solid #d0d0d0;
+    border-radius: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    padding: 20px 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .drc-label {
+    position: absolute;
+    top: 6px;
+    font-size: 12px;
+    color: #777;
+    font-weight: bold;
+    font-family: sans-serif;
+    letter-spacing: 2px;
+  }
+  .drc-buttons-left, .drc-buttons-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  .drc-buttons-left { left: 10px; }
+  .drc-buttons-right { right: 10px; }
+
+  .stick {
+    width: 26px;
+    height: 26px;
+    background: #444;
+    border-radius: 50%;
+    border: 2px solid #666;
+    box-shadow: inset 0 2px 4px #222;
+  }
+  .dpad {
+    width: 28px;
+    height: 28px;
+    background: #555;
+    clip-path: polygon(33% 0, 66% 0, 66% 33%, 100% 33%, 100% 66%, 66% 66%, 66% 100%, 33% 100%, 33% 66%, 0 66%, 0 33%, 33% 33%);
+  }
+  .abxy {
+    display: grid;
+    grid-template-columns: repeat(2, 12px);
+    gap: 4px;
+  }
+  .abxy-btn {
+    width: 12px;
+    height: 12px;
+    background: #444;
+    border-radius: 50%;
+  }
+
+  /* Canvas styling */
+  canvas {
+    display: block;
+    cursor: crosshair;
+    background: #f5e6c8;
+  }
+  #tvCanvas {
+    width: 640px;
+    height: 360px;
+  }
+  #drcCanvas {
+    width: 533px;
+    height: 300px;
+    border: 3px solid #b5b5b5;
+    border-radius: 8px;
+  }
+
+  .instructions {
+    margin-top: 15px;
+    text-align: center;
+    color: #aaa;
+    font-family: sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 800px;
+  }
+  .instructions span {
+    color: #ffcc66;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pou - Nintendo Wii U Dual-Screen Interactive Simulator</h1>
+  <p>Play Pou instantly in your browser! Experience real-time TV ambient mirroring and GamePad touch controls.</p>
+</header>
+
+<div class="screens-container">
+  <!-- TV Screen -->
+  <div class="tv-frame">
+    <div class="tv-label">WII U AMBIENT TV OUTPUT (1080p Mirror)</div>
+    <canvas id="tvCanvas" width="960" height="540"></canvas>
+  </div>
+
+  <!-- GamePad Screen -->
+  <div class="drc-frame">
+    <div class="drc-label">WII U GAMEPAD</div>
+    <div class="drc-buttons-left">
+      <div class="stick"></div>
+      <div class="dpad"></div>
+    </div>
+    <canvas id="drcCanvas" width="854" height="480"></canvas>
+    <div class="drc-buttons-right">
+      <div class="abxy">
+        <div class="abxy-btn"></div>
+        <div class="abxy-btn"></div>
+        <div class="abxy-btn"></div>
+        <div class="abxy-btn"></div>
+      </div>
+      <div class="stick"></div>
+    </div>
+  </div>
+</div>
+
+<div class="instructions">
+  <span>Controls:</span> Click & drag on the <strong>GamePad Screen</strong> with your mouse/touchscreen to interact!
+  <br>• <strong>Kitchen:</strong> Drag food to Pou's mouth to eat!
+  <br>• <strong>Bathroom:</strong> Drag soap to lather bubbles, drag shower to wash clean!
+  <br>• <strong>Laboratory:</strong> Drag potions to Pou to modify stats.
+  <br>• <strong>Bedroom:</strong> Click lamp to sleep / wake up!
+  <br>• <strong>Game Room:</strong> Flick the ball or click Games to play mini-games!
+  <br>• <strong>Petting:</strong> Stroke Pou gently with your cursor to make it purr with happy hearts!
+</div>
+
+<script>
+// Sound Audio Context
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const audioCache = {};
+
+function playSound(file, volume = 0.8) {
+  if (!audioCache[file]) {
+    const audio = new Audio('../content/assets/sounds/' + file);
+    audioCache[file] = audio;
+  }
+  const sound = audioCache[file].cloneNode();
+  sound.volume = volume;
+  sound.play().catch(e => console.log('Audio autoplay blocked, click canvas first'));
+}
+
+// Game State
+const state = {
+  fullness: 80,
+  energy: 85,
+  fun: 75,
+  health: 100,
+  coins: 250,
+  xp: 0,
+  level: 1,
+  isDirty: false,
+  dirtAmount: 0,
+  soapAmount: 0,
+  isAsleep: false,
+  roomIdx: 0, // 0: Kitchen, 1: Bathroom, 2: Lab, 3: Game Room, 4: Bedroom
+  wallpaper: '111.png'
+};
+
+const rooms = ['Kitchen', 'Bathroom', 'Laboratory', 'Game Room', 'Bedroom'];
+
+// Foods & Potions
+const foods = [
+  { name: 'Apple', img: 'Apple.png', nutrition: 15 },
+  { name: 'Burger', img: 'Burger.png', nutrition: 30 },
+  { name: 'Cherries', img: 'Cherries.png', nutrition: 10 },
+  { name: 'Donut', img: 'Banana Donut.png', nutrition: 20 }
+];
+let selectedFoodIdx = 0;
+
+const potions = [
+  { name: 'Health Potion', img: 'Health Potion.png', type: 'health' },
+  { name: 'Small Health', img: 'Small Health.png', type: 'small_health' },
+  { name: 'Energizer', img: 'Energizer.png', type: 'energizer' },
+  { name: 'Hunger Potion', img: 'Hunger Potion.png', type: 'hunger' }
+];
+let selectedPotionIdx = 0;
+
+// Pou Character State
+const pou = {
+  x: 427,
+  y: 250,
+  scale: 1.4,
+  mouthState: 'normal', // normal, open, eating, sad
+  eatingTimer: 0,
+  blinkTimer: 0,
+  isBlinking: false,
+  hearts: [],
+  breathing: 0,
+  lookX: 0,
+  lookY: 0
+};
+
+// Physics Ball for Game Room
+const ball = {
+  x: 550,
+  y: 320,
+  vx: 0,
+  vy: 0,
+  r: 30,
+  drag: false
+};
+
+// Drag state
+let dragItem = null; // { type: 'food'|'soap'|'shower'|'potion', x, y }
+let mouse = { x: 0, y: 0, down: false };
+
+// Image Loader Cache
+const imgCache = {};
+function getImage(path) {
+  if (!imgCache[path]) {
+    const img = new Image();
+    img.src = '../content/assets/' + path;
+    imgCache[path] = img;
+  }
+  return imgCache[path];
+}
+
+// Canvases
+const tvCanvas = document.getElementById('tvCanvas');
+const tvCtx = tvCanvas.getContext('2d');
+
+const drcCanvas = document.getElementById('drcCanvas');
+const drcCtx = drcCanvas.getContext('2d');
+
+// Input Listeners
+drcCanvas.addEventListener('mousedown', e => handlePointerDown(e));
+window.addEventListener('mousemove', e => handlePointerMove(e));
+window.addEventListener('mouseup', e => handlePointerUp(e));
+
+drcCanvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  handlePointerDown(e.touches[0]);
+}, { passive: false });
+window.addEventListener('touchmove', e => {
+  if (mouse.down) {
+    e.preventDefault();
+    handlePointerMove(e.touches[0]);
+  }
+}, { passive: false });
+window.addEventListener('touchend', e => handlePointerUp(e));
+
+function getCanvasCoords(e) {
+  const rect = drcCanvas.getBoundingClientRect();
+  const scaleX = drcCanvas.width / rect.width;
+  const scaleY = drcCanvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+
+function handlePointerDown(e) {
+  const p = getCanvasCoords(e);
+  mouse.x = p.x;
+  mouse.y = p.y;
+  mouse.down = true;
+
+  // AudioContext unlock
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  // Navigation Arrows
+  if (p.y <= 60) {
+    if (p.x <= 70) {
+      state.roomIdx = (state.roomIdx - 1 + rooms.length) % rooms.length;
+      playSound('click.wav', 0.5);
+      return;
+    }
+    if (p.x >= 780) {
+      state.roomIdx = (state.roomIdx + 1) % rooms.length;
+      playSound('click.wav', 0.5);
+      return;
+    }
+  }
+
+  // Room Specific Tools Click
+  if (state.roomIdx === 0) { // Kitchen
+    // Arrows
+    if (p.y >= 380 && p.y <= 440) {
+      if (p.x >= 310 && p.x <= 355) {
+        selectedFoodIdx = (selectedFoodIdx - 1 + foods.length) % foods.length;
+        playSound('click.wav', 0.5);
+        return;
+      }
+      if (p.x >= 500 && p.x <= 545) {
+        selectedFoodIdx = (selectedFoodIdx + 1) % foods.length;
+        playSound('click.wav', 0.5);
+        return;
+      }
+    }
+    // Food Tray
+    const distToFood = Math.hypot(p.x - 427, p.y - 415);
+    if (distToFood < 45) {
+      dragItem = { type: 'food', x: p.x, y: p.y };
+      return;
+    }
+  } else if (state.roomIdx === 1) { // Bathroom
+    if (Math.hypot(p.x - 260, p.y - 415) < 45) {
+      dragItem = { type: 'soap', x: p.x, y: p.y };
+      return;
+    }
+    if (Math.hypot(p.x - 590, p.y - 415) < 45) {
+      dragItem = { type: 'shower', x: p.x, y: p.y };
+      return;
+    }
+  } else if (state.roomIdx === 2) { // Laboratory
+    if (p.y >= 380 && p.y <= 440) {
+      if (p.x >= 310 && p.x <= 355) {
+        selectedPotionIdx = (selectedPotionIdx - 1 + potions.length) % potions.length;
+        playSound('click.wav', 0.5);
+        return;
+      }
+      if (p.x >= 500 && p.x <= 545) {
+        selectedPotionIdx = (selectedPotionIdx + 1) % potions.length;
+        playSound('click.wav', 0.5);
+        return;
+      }
+    }
+    if (Math.hypot(p.x - 427, p.y - 415) < 45) {
+      dragItem = { type: 'potion', x: p.x, y: p.y };
+      return;
+    }
+  } else if (state.roomIdx === 3) { // Game Room
+    if (Math.hypot(p.x - ball.x, p.y - ball.y) < ball.r * 1.5) {
+      ball.drag = true;
+      ball.vx = 0;
+      ball.vy = 0;
+      return;
+    }
+  } else if (state.roomIdx === 4) { // Bedroom
+    if (Math.hypot(p.x - 640, p.y - 240) < 60) {
+      state.isAsleep = !state.isAsleep;
+      playSound('click.wav', 0.6);
+      return;
+    }
+  }
+
+  // Petting Pou
+  if (!state.isAsleep && Math.hypot(p.x - 427, p.y - 250) < 80) {
+    triggerPetting();
+  }
+}
+
+function handlePointerMove(e) {
+  if (!mouse.down) return;
+  const p = getCanvasCoords(e);
+  const dx = p.x - mouse.x;
+  const dy = p.y - mouse.y;
+  mouse.x = p.x;
+  mouse.y = p.y;
+
+  if (dragItem) {
+    dragItem.x = p.x;
+    dragItem.y = p.y;
+
+    if (dragItem.type === 'soap' && Math.hypot(p.x - 427, p.y - 250) < 80) {
+      state.soapAmount = Math.min(100, state.soapAmount + 1.5);
+      triggerPetting();
+    }
+    if (dragItem.type === 'shower' && Math.hypot(p.x - 427, p.y - 250) < 80) {
+      if (state.soapAmount > 0) {
+        state.soapAmount = Math.max(0, state.soapAmount - 3);
+        state.dirtAmount = Math.max(0, state.dirtAmount - 5);
+        if (state.dirtAmount === 0 && state.isDirty) {
+          state.isDirty = false;
+          playSound('success.wav', 0.7);
+          addXP(15);
+        }
+      }
+    }
+  } else if (ball.drag) {
+    ball.x = p.x;
+    ball.y = p.y;
+    ball.vx = dx * 30;
+    ball.vy = dy * 30;
+  } else if (!state.isAsleep && Math.hypot(p.x - 427, p.y - 250) < 80) {
+    state.fun = Math.min(100, state.fun + 0.15);
+    triggerPetting();
+  }
+}
+
+function handlePointerUp(e) {
+  if (dragItem) {
+    if (dragItem.type === 'food') {
+      if (Math.hypot(dragItem.x - 427, dragItem.y - 280) < 70) {
+        if (state.fullness < 99) {
+          const item = foods[selectedFoodIdx];
+          state.fullness = Math.min(100, state.fullness + item.nutrition);
+          addXP(8);
+          pou.eatingTimer = 1.2;
+          playSound('a7a7e7e7e7e.wav', 0.9);
+        } else {
+          pou.mouthState = 'sad';
+          playSound('no.wav', 0.8);
+          setTimeout(() => pou.mouthState = 'normal', 1000);
+        }
+      }
+    } else if (dragItem.type === 'potion') {
+      if (Math.hypot(dragItem.x - 427, dragItem.y - 280) < 70) {
+        const p = potions[selectedPotionIdx];
+        if (p.type === 'health') state.health = Math.min(100, state.health + 50);
+        if (p.type === 'small_health') state.health = Math.min(100, state.health + 25);
+        if (p.type === 'energizer') state.energy = 100;
+        if (p.type === 'hunger') state.fullness = 0;
+        addXP(10);
+        playSound('potion.wav', 0.9);
+        pou.eatingTimer = 0.8;
+      }
+    }
+    dragItem = null;
+  }
+
+  if (ball.drag) {
+    ball.drag = false;
+    playSound('ball.wav', 0.7);
+  }
+
+  mouse.down = false;
+}
+
+function triggerPetting() {
+  if (pou.hearts.length < 10 && Math.random() < 0.3) {
+    pou.hearts.push({
+      x: 427 + (Math.random() * 80 - 40),
+      y: 220,
+      vy: 40 + Math.random() * 30,
+      alpha: 1.0,
+      size: 14 + Math.random() * 8
+    });
+    playSound('naa22.wav', 0.2);
+  }
+}
+
+function addXP(amount) {
+  state.xp += amount;
+  const req = state.level * 60;
+  if (state.xp >= req) {
+    state.xp -= req;
+    state.level++;
+    state.coins += 50;
+    playSound('success.wav', 0.9);
+  }
+}
+
+// Procedural Pou Drawer
+function drawPou(ctx, cx, cy, scale) {
+  ctx.save();
+  ctx.translate(cx, cy + Math.sin(pou.breathing) * 3 * scale);
+
+  const baseW = 150 * scale;
+  const baseH = 130 * scale;
+
+  // Body Outline & Fill
+  ctx.fillStyle = '#c7955a'; // Pou Brown
+  ctx.strokeStyle = '#785028';
+  ctx.lineWidth = 5 * scale;
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.arc(0, -baseH * 0.32, baseW * 0.28, Math.PI, 0); // Head dome
+  ctx.bezierCurveTo(baseW * 0.5, -baseH * 0.1, baseW * 0.55, baseH * 0.35, baseW * 0.25, baseH * 0.42); // Right side
+  ctx.bezierCurveTo(0, baseH * 0.48, 0, baseH * 0.48, -baseW * 0.25, baseH * 0.42); // Bottom base
+  ctx.bezierCurveTo(-baseW * 0.55, baseH * 0.35, -baseW * 0.5, -baseH * 0.1, -baseW * 0.28, -baseH * 0.32); // Left side
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Dirt Splatters
+  if (state.isDirty || state.dirtAmount > 50) {
+    ctx.fillStyle = 'rgba(80, 50, 20, 0.7)';
+    ctx.beginPath();
+    ctx.arc(-35 * scale, 25 * scale, 7 * scale, 0, Math.PI*2);
+    ctx.arc(40 * scale, 15 * scale, 8 * scale, 0, Math.PI*2);
+    ctx.arc(15 * scale, 35 * scale, 6 * scale, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Soap Bubbles
+  if (state.soapAmount > 0) {
+    ctx.fillStyle = 'rgba(230, 245, 255, 0.85)';
+    ctx.strokeStyle = '#b4d2f5';
+    ctx.lineWidth = 1.5;
+    const count = Math.min(12, Math.floor(state.soapAmount * 0.15));
+    for (let i = 0; i < count; i++) {
+      const angle = i * 2.4;
+      const dist = (20 + (i % 3) * 12) * scale;
+      const bx = Math.cos(angle) * dist;
+      const by = Math.sin(angle) * dist * 0.8 + 15 * scale;
+      ctx.beginPath();
+      ctx.arc(bx, by, (7 + (i % 2) * 3) * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  // Eyes
+  const eyeSpacing = 24 * scale;
+  const eyeW = 18 * scale;
+  const eyeH = 22 * scale;
+  const eyeY = -12 * scale;
+
+  if (state.isAsleep || pou.isBlinking) {
+    // Closed curved eyes
+    ctx.strokeStyle = '#282828';
+    ctx.lineWidth = 3.5 * scale;
+    ctx.beginPath();
+    ctx.arc(-eyeSpacing, eyeY, 14 * scale, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(eyeSpacing, eyeY, 14 * scale, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  } else {
+    // Open Eyes
+    for (const side of [-1, 1]) {
+      const ecx = side * eyeSpacing;
+      // Sclera
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#282828';
+      ctx.lineWidth = 3 * scale;
+      ctx.beginPath();
+      ctx.ellipse(ecx, eyeY, eyeW, eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Pupil with tracking
+      const pupilX = ecx + pou.lookX * scale;
+      const pupilY = eyeY + pou.lookY * scale;
+      ctx.fillStyle = '#282828';
+      ctx.beginPath();
+      ctx.arc(pupilX, pupilY, 8.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Shine reflection
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(pupilX - 2.5 * scale, pupilY - 2.5 * scale, 2.8 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Mouth
+  const mouthY = 22 * scale;
+  ctx.fillStyle = '#321e14';
+  ctx.strokeStyle = '#321e14';
+  ctx.lineWidth = 3.5 * scale;
+  ctx.lineCap = 'round';
+
+  if (dragItem && (dragItem.type === 'food' || dragItem.type === 'potion')) {
+    // Open mouth for food
+    ctx.beginPath();
+    ctx.arc(0, mouthY, 12 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#b43232';
+    ctx.beginPath();
+    ctx.arc(0, mouthY + 2, 7 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (pou.eatingTimer > 0) {
+    // Chewing animation
+    const chew = Math.abs(Math.sin(pou.eatingTimer * 16));
+    ctx.beginPath();
+    ctx.arc(0, mouthY, (4 + chew * 8) * scale, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (pou.mouthState === 'sad') {
+    // Frowning
+    ctx.beginPath();
+    ctx.arc(0, mouthY + 14 * scale, 16 * scale, Math.PI * 1.25, Math.PI * 1.75);
+    ctx.stroke();
+  } else {
+    // Happy smile
+    ctx.beginPath();
+    ctx.arc(0, mouthY, 16 * scale, 0.25, Math.PI - 0.25);
+    ctx.stroke();
+  }
+
+  // Hearts
+  pou.hearts.forEach(h => {
+    ctx.fillStyle = `rgba(255, 80, 120, ${h.alpha})`;
+    ctx.beginPath();
+    ctx.arc(h.x - cx - h.size * 0.35, h.y - cy, h.size * 0.5, 0, Math.PI*2);
+    ctx.arc(h.x - cx + h.size * 0.35, h.y - cy, h.size * 0.5, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+// Main Game Loop
+let lastTime = performance.now();
+function loop(now) {
+  const dt = Math.min(0.1, (now - lastTime) / 1000);
+  lastTime = now;
+
+  // State Decay
+  if (state.isAsleep) {
+    state.energy = Math.min(100, state.energy + dt * 5.0);
+    state.fullness = Math.max(0, state.fullness - dt * 0.2);
+  } else {
+    state.energy = Math.max(0, state.energy - dt * 0.25);
+    state.fullness = Math.max(0, state.fullness - dt * 0.35);
+    state.fun = Math.max(0, state.fun - dt * 0.45);
+    state.dirtAmount = Math.min(300, state.dirtAmount + dt * 1.5);
+    if (state.dirtAmount > 120) state.isDirty = true;
+  }
+
+  // Pou Animations
+  pou.breathing += dt * (state.isAsleep ? 1.5 : 3.0);
+  if (pou.eatingTimer > 0) pou.eatingTimer -= dt;
+
+  pou.blinkTimer += dt;
+  if (pou.blinkTimer > 3.0) {
+    pou.isBlinking = true;
+    if (pou.blinkTimer > 3.16) {
+      pou.isBlinking = false;
+      pou.blinkTimer = 0;
+    }
+  }
+
+  // Eye look direction towards drag item or mouse
+  if (dragItem) {
+    pou.lookX = Math.max(-8, Math.min(8, (dragItem.x - 427) * 0.08));
+    pou.lookY = Math.max(-6, Math.min(6, (dragItem.y - 250) * 0.08));
+  } else if (state.roomIdx === 3 && ball.drag) {
+    pou.lookX = Math.max(-8, Math.min(8, (ball.x - 427) * 0.08));
+    pou.lookY = Math.max(-6, Math.min(6, (ball.y - 250) * 0.08));
+  } else {
+    pou.lookX *= 0.9;
+    pou.lookY *= 0.9;
+  }
+
+  // Hearts update
+  for (let i = pou.hearts.length - 1; i >= 0; i--) {
+    const h = pou.hearts[i];
+    h.y -= h.vy * dt;
+    h.alpha -= dt * 0.8;
+    if (h.alpha <= 0) pou.hearts.splice(i, 1);
+  }
+
+  // Ball physics
+  if (state.roomIdx === 3 && !ball.drag) {
+    ball.vy += 980 * dt;
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+    ball.vx *= Math.pow(0.985, dt * 60);
+
+    if (ball.y + ball.r > 440) {
+      ball.y = 440 - ball.r;
+      if (Math.abs(ball.vy) > 40) {
+        ball.vy = -ball.vy * 0.72;
+        playSound('ball.wav', 0.5);
+        state.fun = Math.min(100, state.fun + 1.0);
+      } else {
+        ball.vy = 0;
+      }
+    }
+    if (ball.x - ball.r < 50) { ball.x = 50 + ball.r; ball.vx = -ball.vx * 0.75; }
+    if (ball.x + ball.r > 804) { ball.x = 804 - ball.r; ball.vx = -ball.vx * 0.75; }
+  }
+
+  // Render both screens
+  renderTV();
+  renderDRC();
+
+  requestAnimationFrame(loop);
+}
+
+// Render TV Output (1080p -> 960x540 canvas)
+function renderTV() {
+  tvCtx.fillStyle = '#f5e6c8';
+  tvCtx.fillRect(0, 0, tvCanvas.width, tvCanvas.height);
+
+  // Top Bar Banner
+  tvCtx.fillStyle = 'rgba(250, 242, 228, 0.95)';
+  tvCtx.fillRect(0, 0, tvCanvas.width, 55);
+  tvCtx.strokeStyle = '#d2be9b';
+  tvCtx.lineWidth = 1;
+  tvCtx.beginPath();
+  tvCtx.moveTo(0, 55);
+  tvCtx.lineTo(tvCanvas.width, 55);
+  tvCtx.stroke();
+
+  // Top Bar Content
+  tvCtx.fillStyle = '#5a3c1e';
+  tvCtx.font = 'bold 16px Cookies, Arial';
+  tvCtx.fillText('LEVEL ' + state.level, 30, 32);
+
+  // XP Bar
+  tvCtx.fillStyle = '#ddd';
+  tvCtx.fillRect(110, 20, 110, 12);
+  tvCtx.fillStyle = '#ffb91e';
+  const xpRatio = state.xp / (state.level * 60);
+  tvCtx.fillRect(110, 20, Math.min(110, 110 * xpRatio), 12);
+
+  // Room Title
+  tvCtx.fillStyle = '#503219';
+  tvCtx.font = 'bold 22px Cookies, Arial';
+  tvCtx.textAlign = 'center';
+  tvCtx.fillText(rooms[state.roomIdx], tvCanvas.width / 2, 34);
+  tvCtx.textAlign = 'left';
+
+  // Coins
+  tvCtx.fillStyle = '#be8c14';
+  tvCtx.fillText(state.coins + ' COINS', 820, 32);
+
+  // 4 TV Gauges
+  const stats = [
+    { name: 'Fullness', val: state.fullness, col: '#ff7832' },
+    { name: 'Health', val: state.health, col: '#e63232' },
+    { name: 'Energy', val: state.energy, col: '#3cb4f0' },
+    { name: 'Fun', val: state.fun, col: '#64d73c' }
+  ];
+  stats.forEach((s, idx) => {
+    const cx = 330 + idx * 100;
+    const cy = 95;
+    tvCtx.fillStyle = '#fff';
+    tvCtx.beginPath();
+    tvCtx.arc(cx, cy, 20, 0, Math.PI * 2);
+    tvCtx.fill();
+    tvCtx.strokeStyle = '#b49673';
+    tvCtx.stroke();
+
+    tvCtx.fillStyle = s.col;
+    tvCtx.beginPath();
+    tvCtx.arc(cx, cy, 16 * (s.val / 100), 0, Math.PI * 2);
+    tvCtx.fill();
+
+    tvCtx.fillStyle = '#322314';
+    tvCtx.font = '10px Cookies, Arial';
+    tvCtx.textAlign = 'center';
+    tvCtx.fillText(Math.round(s.val) + '%', cx, cy + 32);
+  });
+  tvCtx.textAlign = 'left';
+
+  // Mirrored Pou on TV
+  drawPou(tvCtx, 480, 320, 1.8);
+
+  // Sleeping Dimmer
+  if (state.isAsleep) {
+    tvCtx.fillStyle = 'rgba(15, 15, 40, 0.75)';
+    tvCtx.fillRect(0, 0, tvCanvas.width, tvCanvas.height);
+    tvCtx.fillStyle = '#dcf0ff';
+    tvCtx.font = '24px Cookies, Arial';
+    tvCtx.fillText('Zzz...', 520, 240);
+  }
+}
+
+// Render GamePad DRC Output (854x480)
+function renderDRC() {
+  drcCtx.fillStyle = '#ebe0be';
+  drcCtx.fillRect(0, 0, drcCanvas.width, drcCanvas.height);
+
+  // Top Nav Bar
+  drcCtx.fillStyle = '#fcf6eb';
+  drcCtx.fillRect(0, 0, drcCanvas.width, 56);
+  drcCtx.strokeStyle = '#d7c3aa';
+  drcCtx.lineWidth = 2;
+  drcCtx.strokeRect(0, 0, drcCanvas.width, 56);
+
+  // Arrows
+  drcCtx.fillStyle = '#785028';
+  drcCtx.font = 'bold 28px Cookies, Arial';
+  drcCtx.fillText('<', 25, 38);
+  drcCtx.fillText('>', 810, 38);
+
+  // Title
+  drcCtx.font = 'bold 24px Cookies, Arial';
+  drcCtx.textAlign = 'center';
+  drcCtx.fillText(rooms[state.roomIdx], 427, 36);
+  drcCtx.textAlign = 'left';
+
+  // Coins
+  drcCtx.fillStyle = '#b48214';
+  drcCtx.font = '18px Cookies, Arial';
+  drcCtx.fillText(state.coins + ' C', 710, 34);
+
+  // Center Pou
+  drawPou(drcCtx, 427, 250, 1.4);
+
+  // Room Specific UI
+  if (state.roomIdx === 0) { // Kitchen
+    drcCtx.fillStyle = '#ffffff';
+    drcCtx.strokeStyle = '#c8b496';
+    drcCtx.beginPath();
+    drcCtx.roundRect(160, 375, 534, 85, 16);
+    drcCtx.fill();
+    drcCtx.stroke();
+
+    // Arrows
+    drcCtx.fillStyle = '#785028';
+    drcCtx.font = 'bold 24px Cookies, Arial';
+    drcCtx.fillText('<', 320, 425);
+    drcCtx.fillText('>', 520, 425);
+
+    // Food item
+    const f = foods[selectedFoodIdx];
+    const foodImg = getImage('images/food/' + f.img);
+    if (!dragItem || dragItem.type !== 'food') {
+      if (foodImg.complete) drcCtx.drawImage(foodImg, 427 - 32, 415 - 32, 64, 64);
+    }
+  } else if (state.roomIdx === 1) { // Bathroom
+    drcCtx.fillStyle = '#ffffff';
+    drcCtx.strokeStyle = '#c8b496';
+    drcCtx.beginPath();
+    drcCtx.roundRect(160, 375, 534, 85, 16);
+    drcCtx.fill();
+    drcCtx.stroke();
+
+    // Soap & Shower
+    const soapImg = getImage('images/soaps/blue.png');
+    if (!dragItem || dragItem.type !== 'soap') {
+      if (soapImg.complete) drcCtx.drawImage(soapImg, 260 - 35, 415 - 25, 70, 50);
+    }
+    const showerImg = getImage('images/soaps/bubble.png');
+    if (!dragItem || dragItem.type !== 'shower') {
+      if (showerImg.complete) drcCtx.drawImage(showerImg, 590 - 30, 415 - 30, 60, 60);
+    }
+    drcCtx.fillStyle = '#64503c';
+    drcCtx.font = '16px Cookies, Arial';
+    drcCtx.textAlign = 'center';
+    drcCtx.fillText('Soap', 260, 452);
+    drcCtx.fillText('Shower', 590, 452);
+    drcCtx.textAlign = 'left';
+  } else if (state.roomIdx === 2) { // Laboratory
+    drcCtx.fillStyle = '#ffffff';
+    drcCtx.strokeStyle = '#c8b496';
+    drcCtx.beginPath();
+    drcCtx.roundRect(160, 375, 534, 85, 16);
+    drcCtx.fill();
+    drcCtx.stroke();
+
+    drcCtx.fillStyle = '#785028';
+    drcCtx.font = 'bold 24px Cookies, Arial';
+    drcCtx.fillText('<', 320, 425);
+    drcCtx.fillText('>', 520, 425);
+
+    const p = potions[selectedPotionIdx];
+    const potImg = getImage('images/potions/' + p.img);
+    if (!dragItem || dragItem.type !== 'potion') {
+      if (potImg.complete) drcCtx.drawImage(potImg, 427 - 30, 415 - 30, 60, 60);
+    }
+  } else if (state.roomIdx === 3) { // Game Room
+    // Draw ball
+    const ballImg = getImage('images/balls/Basketball.png');
+    if (ballImg.complete) {
+      drcCtx.drawImage(ballImg, ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2);
+    } else {
+      drcCtx.fillStyle = '#e65a1e';
+      drcCtx.beginPath();
+      drcCtx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      drcCtx.fill();
+    }
+  } else if (state.roomIdx === 4) { // Bedroom
+    // Lamp
+    const lampImg = getImage(state.isAsleep ? 'images/lamps/1_yellow_blue_off.png' : 'images/lamps/1_yellow_blue_on.png');
+    if (lampImg.complete) drcCtx.drawImage(lampImg, 640 - 45, 240 - 75, 90, 150);
+  }
+
+  // Draw Dragging Object on top
+  if (dragItem) {
+    if (dragItem.type === 'food') {
+      const f = foods[selectedFoodIdx];
+      const img = getImage('images/food/' + f.img);
+      if (img.complete) drcCtx.drawImage(img, dragItem.x - 36, dragItem.y - 36, 72, 72);
+    } else if (dragItem.type === 'soap') {
+      const img = getImage('images/soaps/blue.png');
+      if (img.complete) drcCtx.drawImage(img, dragItem.x - 40, dragItem.y - 30, 80, 60);
+    } else if (dragItem.type === 'shower') {
+      const img = getImage('images/soaps/bubble.png');
+      if (img.complete) drcCtx.drawImage(img, dragItem.x - 35, dragItem.y - 35, 70, 70);
+      // Spray lines
+      drcCtx.strokeStyle = '#64b4ff';
+      drcCtx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        drcCtx.beginPath();
+        drcCtx.moveTo(dragItem.x, dragItem.y + 20);
+        drcCtx.lineTo(dragItem.x + i * 15, dragItem.y + 60);
+        drcCtx.stroke();
+      }
+    } else if (dragItem.type === 'potion') {
+      const p = potions[selectedPotionIdx];
+      const img = getImage('images/potions/' + p.img);
+      if (img.complete) drcCtx.drawImage(img, dragItem.x - 35, dragItem.y - 35, 70, 70);
+    }
+  }
+
+  // Sleeping Dimmer on GamePad
+  if (state.isAsleep) {
+    drcCtx.fillStyle = 'rgba(15, 15, 40, 0.72)';
+    drcCtx.fillRect(0, 0, drcCanvas.width, drcCanvas.height);
+    // Draw lamp over dimmer so player can tap to wake up
+    const lampImg = getImage('images/lamps/1_yellow_blue_off.png');
+    if (lampImg.complete) drcCtx.drawImage(lampImg, 640 - 45, 240 - 75, 90, 150);
+  }
+}
+
+// Start game loop
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

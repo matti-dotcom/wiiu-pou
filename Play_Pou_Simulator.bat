@@ -1,0 +1,3 @@
+@echo off
+echo Starting Pou Wii U Dual-Screen Simulator...
+start "" "%~dp0simulator\index.html"

@@ -1,0 +1,57 @@
+name: Build Wii U Title (Pou)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/toolchain-base:latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Wii U Dependencies
+        run: |
+          dkp-pacman -Syu --noconfirm
+          dkp-pacman -S --noconfirm devkitPPC wut wiiu-portlibs wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_ttf wiiu-sdl2_mixer
+
+      - name: Build Pou.rpx
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          export DEVKITPPC=$DEVKITPRO/devkitPPC
+          make
+
+      - name: Install Java JRE
+        run: |
+          apt-get update && apt-get install -y default-jre-headless zip
+
+      - name: Package with NUSPacker
+        env:
+          WIIU_COMMON_KEY: ${{ secrets.WIIU_COMMON_KEY }}
+        run: |
+          if [ -n "$WIIU_COMMON_KEY" ]; then
+            java -jar tools/NUSPacker.jar -in . -out Pou_WUP_Output -key "$WIIU_COMMON_KEY"
+            cd Pou_WUP_Output && zip -r ../Pou_WUP_Package.zip . && cd ..
+          else
+            echo "::warning ::WIIU_COMMON_KEY secret not set. Skipping encrypted packaging, uploading RPX only."
+          fi
+
+      - name: Upload RPX Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pou-RPX-Binary
+          path: code/Pou.rpx
+
+      - name: Upload WUP Installable Package
+        if: env.WIIU_COMMON_KEY != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pou-WUP-Install-Package
+          path: Pou_WUP_Package.zip

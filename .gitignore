@@ -1,0 +1,11 @@
+# Wii U build artifacts
+build/
+*.o
+*.elf
+Pou_WUP_Output/
+Pou_WUP_Package.zip
+pou_save.dat
+
+# OS files
+.DS_Store
+Thumbs.db

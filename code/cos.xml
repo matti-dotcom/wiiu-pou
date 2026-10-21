@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cmd_spec xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="cos.xsd" version="1.0">
+  <os_version type="hexBinary" length="8">000500101000400A</os_version>
+  <title_id type="hexBinary" length="8">0005000010504F55</title_id>
+  <permissions>
+    <permission mask="0xFFFFFFFFFFFFFFFF" type="system" />
+  </permissions>
+  <availabilities>
+    <availability type="all" />
+  </availabilities>
+  <capabilities>
+    <capability type="fsa" />
+  </capabilities>
+</cmd_spec>
